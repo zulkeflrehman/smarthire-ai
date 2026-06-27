@@ -1,8 +1,5 @@
-# Render production requirements
-# spaCy and sentence-transformers excluded:
-#   - spaCy fails to compile on free tier (blis/Cython build error)
-#   - sentence-transformers disabled via USE_SEMANTIC_SCORING=False
-# Name extraction uses regex fallback automatically.
+# Render production requirements — Python 3.11 only
+# --prefer-binary in build command avoids all compilation issues
 
 Django==4.2.7
 gunicorn==21.2.0
@@ -12,6 +9,5 @@ psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 pdfplumber==0.10.3
 python-docx==1.1.0
-scikit-learn==1.4.0
-numpy==1.26.3
-Pillow==10.2.0
+scikit-learn==1.4.2
+numpy==1.26.4
