@@ -8,16 +8,23 @@ Extracts:
   - Education level    (keyword scan)
   - Experience years   (regex)
 """
-import re
-import spacy
+import re   
 from typing import Dict, List, Optional
 
 # ── spaCy model (small, fast, works offline) ──────────────────────────────────
 try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    # If model not downloaded yet — caller will see the error message
-    nlp = None
+    import spacy
+except ImportError:
+    spacy = None
+
+nlp = None
+
+if spacy is not None:
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except OSError:
+        # Model is not installed. We will use fallback name extraction.
+        nlp = None
 
 
 # ── Skill vocabulary ──────────────────────────────────────────────────────────
