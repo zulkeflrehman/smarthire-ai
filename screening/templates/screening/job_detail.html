@@ -1,0 +1,152 @@
+{% extends 'screening/base.html' %}
+{% block title %}{{ job.title }} — SmartHire AI{% endblock %}
+{% block page_title %}{{ job.title }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'upload_resumes' job.pk %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-upload me-1"></i> Upload Resumes
+  </a>
+  {% if job.is_screened %}
+    <a href="{% url 'results' job.pk %}" class="btn btn-success btn-sm">
+      <i class="bi bi-bar-chart-fill me-1"></i> View Results
+    </a>
+  {% else %}
+    <a href="{% url 'screen_resumes' job.pk %}" class="btn btn-indigo btn-sm {% if not job.resume_count %}disabled{% endif %}">
+      <i class="bi bi-cpu-fill me-1"></i> Run Screening
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- Job summary -->
+  <div class="col-lg-4">
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-info-circle me-2"></i>Job Info</span>
+        <a href="{% url 'job_delete' job.pk %}" class="btn btn-icon text-danger" title="Delete job">
+          <i class="bi bi-trash3"></i>
+        </a>
+      </div>
+      <div class="px-4 pb-4">
+        <dl class="info-list">
+          {% if job.company %}
+            <dt>Company</dt><dd>{{ job.company }}</dd>
+          {% endif %}
+          {% if job.location %}
+            <dt>Location</dt><dd>{{ job.location }}</dd>
+          {% endif %}
+          <dt>Posted</dt>
+          <dd>{{ job.created_at|date:"M j, Y" }}</dd>
+          <dt>Resumes</dt>
+          <dd>{{ job.resume_count }}</dd>
+          <dt>Status</dt>
+          <dd>
+            {% if job.is_screened %}
+              <span class="badge-pill badge-pill--green">Screened</span>
+            {% else %}
+              <span class="badge-pill badge-pill--gray">Pending screening</span>
+            {% endif %}
+          </dd>
+        </dl>
+
+        {% if job.required_skills %}
+          <div class="mt-3 pt-3 border-top border-light">
+            <div class="small fw-600 text-muted mb-2">Required Skills</div>
+            <div class="skill-tags">
+              {% for skill in job.get_skills_list %}
+                <span class="skill-tag">{{ skill }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Description + resumes -->
+  <div class="col-lg-8">
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <span><i class="bi bi-file-text me-2"></i>Job Description</span>
+      </div>
+      <div class="px-4 pb-4">
+        <div class="jd-text m-0">{{ job.description|linebreaksbr }}</div>
+      </div>
+    </div>
+
+    {% if applications %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <span><i class="bi bi-people me-2"></i>Candidates ({{ applications.count }})</span>
+          <a href="{% url 'screen_resumes' job.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-arrow-clockwise me-1"></i>Re-screen
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Candidate</th>
+                <th>Score</th>
+                <th>Skills matched</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in applications %}
+                <tr>
+                  <td class="rank-cell">{{ app.rank }}</td>
+                  <td>
+                    <div class="candidate-cell">
+                      <div class="candidate-avatar candidate-avatar--{{ app.score_css_class }}">{{ app.resume.candidate_name|first|upper }}</div>
+                      <div>
+                        <div class="fw-500">{{ app.resume.candidate_name }}</div>
+                        <div class="small text-muted">{{ app.resume.candidate_email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="score-pill score-pill--{{ app.score_css_class }}">
+                      {{ app.final_score|floatformat:0 }}%
+                    </span>
+                  </td>
+                  <td class="small text-muted">{{ app.matched_skills|join:", "|truncatechars:40 }}</td>
+                  <td>
+                    <span class="badge-pill badge-pill--{% if app.status == 'shortlisted' %}green{% elif app.status == 'rejected' %}red{% else %}gray{% endif %}">
+                      {{ app.get_status_display }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-footer">
+          <a href="{% url 'results' job.pk %}" class="btn btn-primary btn-sm">
+            Full Results &amp; Actions <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+          <a href="{% url 'export_csv' job.pk %}" class="btn btn-ghost btn-sm">
+            <i class="bi bi-download me-1"></i> Export CSV
+          </a>
+        </div>
+      </div>
+    {% else %}
+      <div class="card-panel">
+        <div class="empty-state py-5">
+          <i class="bi bi-file-earmark-person fs-1 text-muted"></i>
+          <h6 class="mt-2">No resumes yet</h6>
+          <p class="text-muted">Upload resumes to begin AI screening.</p>
+          <a href="{% url 'upload_resumes' job.pk %}" class="btn btn-primary">
+            <i class="bi bi-upload me-1"></i> Upload Resumes
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

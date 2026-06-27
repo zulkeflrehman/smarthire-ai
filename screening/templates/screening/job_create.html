@@ -1,0 +1,80 @@
+{% extends 'screening/base.html' %}
+{% block title %}New Job — SmartHire AI{% endblock %}
+{% block page_title %}New Job Posting{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-briefcase-fill me-2 text-primary"></i>Job Details</span>
+      </div>
+
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <div class="p-4">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-500">Job Title <span class="text-danger">*</span></label>
+              {{ form.title }}
+              {% if form.title.errors %}<div class="form-error">{{ form.title.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-500">Location</label>
+              {{ form.location }}
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label fw-500">Company</label>
+              {{ form.company }}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-500">
+                Job Description <span class="text-danger">*</span>
+                <span class="form-hint">— the ML model reads this to score candidates</span>
+              </label>
+              {{ form.description }}
+              {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-500">
+                Required Skills
+                <span class="form-hint">— comma-separated, e.g. Python, Django, NLP</span>
+              </label>
+              {{ form.required_skills }}
+              {% if form.required_skills.errors %}<div class="form-error">{{ form.required_skills.errors.0 }}</div>{% endif %}
+              <div class="form-text text-muted mt-1">
+                <i class="bi bi-info-circle me-1"></i>Skills are used for direct keyword overlap scoring (35% of final score).
+              </div>
+            </div>
+          </div>
+
+          <!-- ML scoring explanation -->
+          <div class="info-box mt-4">
+            <div class="info-box-icon"><i class="bi bi-cpu-fill"></i></div>
+            <div>
+              <div class="fw-600 mb-1">How scoring works</div>
+              <div class="small text-muted text-secondary">
+                <strong>65%</strong> — TF-IDF cosine similarity between job description and resume text<br>
+                <strong>35%</strong> — Jaccard skill keyword overlap between required skills and resume skills
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <a href="{% url 'job_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left me-1"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary px-4">
+              Create Job & Upload Resumes <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

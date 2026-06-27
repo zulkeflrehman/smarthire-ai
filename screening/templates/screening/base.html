@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SmartHire AI{% endblock %}</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <i class="bi bi-cpu-fill"></i>
+    </div>
+    <div>
+      <div class="brand-name text-gradient-silver">SmartHire</div>
+      <div class="brand-sub">AI Screener</div>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav">
+    <li class="nav-section-label">Main</li>
+    <li>
+      <a href="{% url 'index' %}" class="sidebar-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill"></i> Dashboard
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'job_list' %}" class="sidebar-link {% if 'job' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="bi bi-briefcase-fill"></i> Job Postings
+      </a>
+    </li>
+
+    <li class="nav-section-label mt-3">Actions</li>
+    <li>
+      <a href="{% url 'job_create' %}" class="sidebar-link">
+        <i class="bi bi-plus-circle-fill"></i> New Job
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <div class="d-flex align-items-center gap-2">
+      <div class="avatar-dot"></div>
+      <div>
+        <div class="small fw-600 text-white" style="font-family: 'Plus Jakarta Sans', sans-serif;">ML Pipeline</div>
+        <div class="xsmall text-muted">Active &amp; Ready</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main Content ──────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="btn btn-sm btn-ghost d-lg-none" id="sidebarToggle">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" id="howToUseBtn">
+        <i class="bi bi-question-circle-fill" style="margin-right: 6px; color: var(--primary);"></i>
+        <span>How to Use</span>
+      </button>
+      {% block topbar_actions %}{% endblock %}
+    </div>
+  </header>
+
+  <!-- Flash messages -->
+  {% if messages %}
+    <div class="messages-area px-4 pt-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+          {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill"></i>
+          {% elif message.tags == 'danger' %}<i class="bi bi-exclamation-triangle-fill"></i>
+          {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-circle-fill"></i>
+          {% else %}<i class="bi bi-info-circle-fill"></i>
+          {% endif %}
+          {{ message }}
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Page content -->
+  <div class="content-area">
+    {% block content %}{% endblock %}
+  </div>
+
+</main>
+
+<!-- ── How To Use Modal ────────────────────────────────────────── -->
+<div class="modal-overlay" id="guideModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">How to Use SmartHire AI</h3>
+      <button class="modal-close" id="closeGuideModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="guide-step">
+        <div class="guide-icon"><i class="bi bi-plus-circle"></i></div>
+        <div class="guide-text">
+          <h4>1. Post a New Job</h4>
+          <p>Go to <strong>New Job</strong> under the Actions section. Fill in the job title, company, location, and a detailed description. A thorough description results in more accurate keyword matches.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+        <div class="guide-text">
+          <h4>2. Upload Candidate Resumes</h4>
+          <p>Navigate to your job details page. Drag-and-drop or select candidate resumes in PDF format. You can upload multiple resumes at once to screen them concurrently.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-icon"><i class="bi bi-cpu"></i></div>
+        <div class="guide-text">
+          <h4>3. Screen Candidates with ML</h4>
+          <p>Click the <strong>Start Screening</strong> button. The system processes resumes using our advanced machine learning pipeline, featuring BERT Semantic Analysis, TF-IDF Term Relevance, and Skill Keyword Mapping.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-icon"><i class="bi bi-bar-chart-line"></i></div>
+        <div class="guide-text">
+          <h4>4. View Analysis & Rankings</h4>
+          <p>Review the ranks, overall match scores, and BERT/TF-IDF weight distributions. Explore matched and unmatched skills for each candidate, and update their status (Shortlisted, Rejected, or Pending) on the fly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% load static %}
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+  // Guide Modal Functionality
+  const howToUseBtn = document.getElementById('howToUseBtn');
+  const guideModal = document.getElementById('guideModal');
+  const closeGuideModal = document.getElementById('closeGuideModal');
+
+  if (howToUseBtn && guideModal && closeGuideModal) {
+    howToUseBtn.addEventListener('click', () => {
+      guideModal.style.display = 'flex';
+      setTimeout(() => guideModal.classList.add('active'), 10);
+    });
+
+    const closeModal = () => {
+      guideModal.classList.remove('active');
+      setTimeout(() => {
+        guideModal.style.display = 'none';
+      }, 300);
+    };
+
+    closeGuideModal.addEventListener('click', closeModal);
+
+    guideModal.addEventListener('click', (e) => {
+      if (e.target === guideModal) {
+        closeModal();
+      }
+    });
+  }
+</script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

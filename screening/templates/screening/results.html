@@ -1,0 +1,270 @@
+{% extends 'screening/base.html' %}
+{% load static screening_extras %}
+{% block title %}Results — {{ job.title }}{% endblock %}
+{% block page_title %}Screening Results{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'export_csv' job.pk %}" class="btn btn-ghost btn-sm">
+    <i class="bi bi-download me-1"></i> Export CSV
+  </a>
+  <a href="{% url 'screen_resumes' job.pk %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-arrow-clockwise me-1"></i> Re-screen
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Scoring mode badge ───────────────────────────────────────────── -->
+{% if used_semantic %}
+  <div class="mode-badge mode-badge--bert mb-4">
+    <i class="bi bi-stars me-2"></i>
+    <strong>3-Signal Scoring Active:</strong>
+    BERT Semantic (45%) + TF-IDF (35%) + Skill Match (20%)
+  </div>
+{% else %}
+  <div class="mode-badge mode-badge--tfidf mb-4">
+    <i class="bi bi-search me-2"></i>
+    <strong>2-Signal Scoring:</strong>
+    TF-IDF (65%) + Skill Match (35%) — enable BERT in settings for better accuracy
+  </div>
+{% endif %}
+
+<!-- ── Summary stats ────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="mini-stat">
+      <div class="mini-stat-val">{{ total_count }}</div>
+      <div class="mini-stat-label">Candidates</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="mini-stat">
+      <div class="mini-stat-val">{{ avg_score }}%</div>
+      <div class="mini-stat-label">Avg Score</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="mini-stat">
+      <div class="mini-stat-val">{{ top_score }}%</div>
+      <div class="mini-stat-label">Top Score</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="mini-stat mini-stat--green">
+      <div class="mini-stat-val">{{ shortlisted }}</div>
+      <div class="mini-stat-label">Shortlisted</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Score distribution -->
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-header">
+        <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Score Distribution</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="scoreChart"></canvas>
+      </div>
+      <div class="chart-legend mt-3">
+        <span class="legend-dot legend-dot--green"></span>High ≥65%
+        <span class="legend-dot legend-dot--yellow ms-3"></span>Mid 35–64%
+        <span class="legend-dot legend-dot--red ms-3"></span>Low &lt;35%
+      </div>
+
+      {% if used_semantic %}
+      <!-- Signal weight breakdown -->
+      <div class="weight-breakdown">
+        <div class="weight-row">
+          <span class="weight-label"><i class="bi bi-stars text-indigo"></i> BERT Semantic</span>
+          <div class="weight-bar-wrap">
+            <div class="weight-bar weight-bar--bert" style="width:45%"></div>
+          </div>
+          <span class="weight-pct">45%</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label"><i class="bi bi-search text-blue"></i> TF-IDF</span>
+          <div class="weight-bar-wrap">
+            <div class="weight-bar weight-bar--tfidf" style="width:35%"></div>
+          </div>
+          <span class="weight-pct">35%</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label"><i class="bi bi-tag text-teal"></i> Skill Match</span>
+          <div class="weight-bar-wrap">
+            <div class="weight-bar weight-bar--skill" style="width:20%"></div>
+          </div>
+          <span class="weight-pct">20%</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Results table -->
+  <div class="col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-people-fill me-2 text-primary"></i>Ranked Candidates</span>
+        <div class="filter-tabs">
+          <a href="?status=all"         class="filter-tab {% if status_filter == 'all' %}active{% endif %}">All</a>
+          <a href="?status=shortlisted" class="filter-tab {% if status_filter == 'shortlisted' %}active{% endif %}">Shortlisted</a>
+          <a href="?status=pending"     class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">Pending</a>
+          <a href="?status=rejected"    class="filter-tab {% if status_filter == 'rejected' %}active{% endif %}">Rejected</a>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th width="36">#</th>
+              <th>Candidate</th>
+              <th width="74">Final</th>
+              {% if used_semantic %}
+              <th width="66">BERT</th>
+              {% endif %}
+              <th width="66">TF-IDF</th>
+              <th>Skills matched</th>
+              <th width="120">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in page_obj %}
+              <tr data-app-id="{{ app.pk }}">
+                <td class="rank-cell">{{ app.rank }}</td>
+                <td>
+                  <div class="candidate-cell">
+                    <div class="candidate-avatar candidate-avatar--{{ app.score_css_class }}">
+                      {{ app.resume.candidate_name|first|upper }}
+                    </div>
+                    <div>
+                      <div class="fw-500">{{ app.resume.candidate_name }}</div>
+                      <div class="small text-muted">{{ app.resume.candidate_email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <!-- Animated SVG score ring -->
+                  <div class="score-ring-mini" title="Final composite score">
+                    <svg viewBox="0 0 40 40" class="score-svg">
+                      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(15, 23, 42, 0.08)" stroke-width="4"/>
+                      <circle cx="20" cy="20" r="16" fill="none"
+                              stroke="{% if app.score_tier == 'high' %}#059669{% elif app.score_tier == 'medium' %}#D97706{% else %}#E11D48{% endif %}"
+                              stroke-width="4" stroke-linecap="round"
+                              stroke-dasharray="100.5"
+                              stroke-dashoffset="{{ app.final_score|dash_offset }}"
+                              transform="rotate(-90 20 20)"/>
+                    </svg>
+                    <span class="score-ring-val">{{ app.final_score|floatformat:0 }}%</span>
+                  </div>
+                </td>
+                {% if used_semantic %}
+                <td>
+                  <span class="mini-score {% if app.semantic_score >= 65 %}mini-score--green{% elif app.semantic_score >= 35 %}mini-score--yellow{% else %}mini-score--red{% endif %}">
+                    {{ app.semantic_score|floatformat:0 }}%
+                  </span>
+                </td>
+                {% endif %}
+                <td>
+                  <span class="mini-score">{{ app.tfidf_score|floatformat:0 }}%</span>
+                </td>
+                <td>
+                  <div class="matched-skills">
+                    {% for sk in app.matched_skills|slice:":4" %}
+                      <span class="skill-tag skill-tag--matched">{{ sk }}</span>
+                    {% empty %}
+                      <span class="text-muted small">—</span>
+                    {% endfor %}
+                    {% if app.matched_skills|length > 4 %}
+                      <span class="skill-tag skill-tag--more">+{{ app.matched_skills|length|add:"-4" }}</span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td>
+                  <select class="status-select status-select--{{ app.status }}"
+                          data-app-id="{{ app.pk }}"
+                          onchange="updateStatus(this)">
+                    <option value="pending"     {% if app.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="shortlisted" {% if app.status == 'shortlisted' %}selected{% endif %}>Shortlisted ✓</option>
+                    <option value="rejected"    {% if app.status == 'rejected' %}selected{% endif %}>Rejected ✗</option>
+                  </select>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="text-center text-muted py-4">No candidates match this filter.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj.has_other_pages %}
+        <div class="panel-footer">
+          <nav><ul class="pagination-mini">
+            {% if page_obj.has_previous %}
+              <li><a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}" class="page-btn"><i class="bi bi-chevron-left"></i></a></li>
+            {% endif %}
+            <li><span class="page-info">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+              <li><a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}" class="page-btn"><i class="bi bi-chevron-right"></i></a></li>
+            {% endif %}
+          </ul></nav>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const buckets = {{ buckets_json }};
+const labels  = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
+const colors  = buckets.map((_, i) => i >= 7 ? '#059669' : i >= 4 ? '#D97706' : '#E11D48');
+
+new Chart(document.getElementById('scoreChart'), {
+  type: 'bar',
+  data: { labels, datasets: [{ data: buckets, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { 
+        beginAtZero: true, 
+        ticks: { stepSize: 1, color: '#64748b', font: { size: 11, family: 'Inter' } }, 
+        grid: { color: 'rgba(0, 0, 0, 0.05)' } 
+      },
+      x: { 
+        ticks: { color: '#64748b', font: { size: 10, family: 'Inter' } }, 
+        grid: { display: false } 
+      },
+    }
+  }
+});
+
+function updateStatus(select) {
+  fetch(`/applications/${select.dataset.appId}/status/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ status: select.value }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) select.className = `status-select status-select--${select.value}`;
+    else alert('Update failed: ' + (d.error || 'error'));
+  });
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'screening/base.html' %}
+{% block title %}Dashboard — SmartHire AI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'job_create' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> New Job
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Banner -->
+<div class="mb-5">
+  <h1 class="text-gradient-silver mb-2" style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em;">Recruitment Command Center</h1>
+  <p class="text-secondary" style="font-size: 1.05rem; max-width: 700px; line-height: 1.5;">Automate and streamline your candidate pipeline with deep NLP parsing, TF-IDF keyword indexing, and semantic BERT scoring.</p>
+</div>
+
+<!-- ── Stat cards ──────────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-card--blue">
+      <div class="stat-icon"><i class="bi bi-briefcase-fill"></i></div>
+      <div class="stat-value">{{ total_jobs }}</div>
+      <div class="stat-label">Job Postings</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-card--purple">
+      <div class="stat-icon"><i class="bi bi-file-earmark-person-fill"></i></div>
+      <div class="stat-value">{{ total_resumes }}</div>
+      <div class="stat-label">Resumes Uploaded</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-card--teal">
+      <div class="stat-icon"><i class="bi bi-cpu-fill"></i></div>
+      <div class="stat-value">{{ total_screened }}</div>
+      <div class="stat-label">Screened by AI</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card stat-card--green">
+      <div class="stat-icon"><i class="bi bi-bookmark-star-fill"></i></div>
+      <div class="stat-value">{{ shortlisted }}</div>
+      <div class="stat-label">Shortlisted</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Recent jobs -->
+  <div class="col-lg-7">
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-clock-history me-2 text-primary"></i>Recent Job Postings</span>
+        <a href="{% url 'job_list' %}" class="btn btn-ghost btn-sm">View all</a>
+      </div>
+      {% if recent_jobs %}
+        <div class="job-list-simple">
+          {% for job in recent_jobs %}
+            <div class="job-row">
+              <div class="job-row-info">
+                <div class="job-row-title">{{ job.title }}</div>
+                <div class="job-row-meta">
+                  {% if job.company %}<span>{{ job.company }}</span> · {% endif %}
+                  <span>{{ job.resume_count }} resume{{ job.resume_count|pluralize }}</span>
+                </div>
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                {% if job.is_screened %}
+                  <span class="badge-pill badge-pill--green">Screened</span>
+                {% else %}
+                  <span class="badge-pill badge-pill--gray">Pending</span>
+                {% endif %}
+                <a href="{% url 'job_detail' job.pk %}" class="btn btn-icon"><i class="bi bi-arrow-right"></i></a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-4">
+          <i class="bi bi-briefcase fs-1 text-muted"></i>
+          <p class="mt-2 text-muted">No jobs yet.</p>
+          <a href="{% url 'job_create' %}" class="btn btn-primary btn-sm">Post your first job</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Top candidates -->
+  <div class="col-lg-5">
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-trophy-fill me-2 text-warning"></i>Top Candidates</span>
+      </div>
+      {% if top_candidates %}
+        <div class="candidates-mini">
+          {% for app in top_candidates %}
+            <div class="candidate-mini-row">
+              <div class="candidate-avatar candidate-avatar--{{ app.score_css_class }}">{{ app.resume.candidate_name|first|upper }}</div>
+              <div class="candidate-mini-info">
+                <div class="candidate-mini-name">{{ app.resume.candidate_name }}</div>
+                <div class="candidate-mini-job">{{ app.job.title }}</div>
+              </div>
+              <div class="score-pill score-pill--{{ app.score_css_class }}">
+                {{ app.final_score|floatformat:0 }}%
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state py-4">
+          <i class="bi bi-people fs-1 text-muted"></i>
+          <p class="mt-2 text-muted">No candidates screened yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- How it works -->
+<div class="card-panel mt-4">
+  <div class="panel-header">
+    <span><i class="bi bi-diagram-3-fill me-2 text-primary"></i>How SmartHire AI Works</span>
+  </div>
+  <div class="row g-4 px-4 pb-4">
+    <div class="col-md-3">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-title">Post a Job</div>
+        <div class="step-desc">Add job title, description and required skills.</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-title">Upload Resumes</div>
+        <div class="step-desc">Batch upload PDF or DOCX files — up to 50 at once.</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-title">AI Screens</div>
+        <div class="step-desc">TF-IDF + skill matching scores every candidate.</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-title">Review &amp; Export</div>
+        <div class="step-desc">Shortlist top candidates. Export ranked CSV.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'screening/base.html' %}
+{% block title %}Job Postings — SmartHire AI{% endblock %}
+{% block page_title %}Job Postings{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'job_create' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> New Job
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{% if jobs %}
+  <div class="row g-4">
+    {% for job in jobs %}
+      <div class="col-md-6 col-xl-4">
+        <div class="job-card">
+          <div class="job-card-header">
+            <div>
+              <div class="job-card-title">{{ job.title }}</div>
+              {% if job.company %}<div class="job-card-company">{{ job.company }}</div>{% endif %}
+              {% if job.location %}<div class="job-card-location"><i class="bi bi-geo-alt-fill me-1"></i>{{ job.location }}</div>{% endif %}
+            </div>
+            <div class="job-card-actions">
+              <a href="{% url 'job_delete' job.pk %}" class="btn btn-icon text-danger" title="Delete">
+                <i class="bi bi-trash3"></i>
+              </a>
+            </div>
+          </div>
+
+          <p class="job-card-desc">{{ job.description|truncatewords:20 }}</p>
+
+          {% if job.required_skills %}
+            <div class="skill-tags">
+              {% for skill in job.get_skills_list|slice:":5" %}
+                <span class="skill-tag">{{ skill }}</span>
+              {% endfor %}
+              {% if job.get_skills_list|length > 5 %}
+                <span class="skill-tag skill-tag--more">+{{ job.get_skills_list|length|add:"-5" }} more</span>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="job-card-footer">
+            <div class="job-card-stats">
+              <span><i class="bi bi-file-earmark-person me-1"></i>{{ job.resume_count }} resume{{ job.resume_count|pluralize }}</span>
+              {% if job.is_screened %}
+                <span class="badge-pill badge-pill--green"><i class="bi bi-check2 me-1"></i>Screened</span>
+              {% else %}
+                <span class="badge-pill badge-pill--gray">Not screened</span>
+              {% endif %}
+            </div>
+            <a href="{% url 'job_detail' job.pk %}" class="btn btn-primary btn-sm">
+              Open <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="empty-page">
+    <i class="bi bi-briefcase-fill"></i>
+    <h5>No job postings yet</h5>
+    <p>Create your first job to start screening candidates.</p>
+    <a href="{% url 'job_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Post a Job
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}

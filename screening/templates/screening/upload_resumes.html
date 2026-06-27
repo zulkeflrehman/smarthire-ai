@@ -1,0 +1,124 @@
+{% extends 'screening/base.html' %}
+{% block title %}Upload Resumes — {{ job.title }}{% endblock %}
+{% block page_title %}Upload Resumes{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <span><i class="bi bi-briefcase me-2 text-primary"></i>{{ job.title }}</span>
+        {% if job.company %}
+          <span class="text-muted small">{{ job.company }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-cloud-upload-fill me-2 text-primary"></i>Upload Resume Files</span>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <div class="p-4">
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">
+              <i class="bi bi-file-earmark-arrow-up-fill"></i>
+            </div>
+            <div class="drop-zone-text">Drag &amp; drop resumes here</div>
+            <div class="drop-zone-sub">PDF or DOCX · max 10 MB each · up to 50 files</div>
+            <label for="id_resumes" class="btn btn-primary mt-3">
+              <i class="bi bi-folder2-open me-1"></i> Browse Files
+            </label>
+            <input type="file" name="resumes" id="id_resumes"
+                   accept=".pdf,.docx,.doc"
+                   multiple class="d-none">
+          </div>
+
+          <!-- File list preview -->
+          <div id="fileList" class="file-list mt-3" style="display:none;"></div>
+
+          <div class="info-box mt-3">
+            <div class="info-box-icon"><i class="bi bi-lightning-charge-fill text-warning"></i></div>
+            <div class="small text-muted text-secondary">
+              After upload, SmartHire will automatically parse each file and extract
+              candidate name, email, skills, education, and experience using NLP.
+              Then click <strong>Run AI Screening</strong> to score all candidates.
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'job_detail' job.pk %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            <button type="submit" class="btn btn-primary px-4" id="uploadBtn" disabled>
+              <span class="upload-idle"><i class="bi bi-upload me-1"></i> Upload &amp; Parse</span>
+              <span class="upload-loading d-none">
+                <span class="spinner-border spinner-border-sm me-1"></span> Processing…
+              </span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const dropZone  = document.getElementById('dropZone');
+  const input     = document.getElementById('id_resumes');
+  const fileList  = document.getElementById('fileList');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const form      = document.getElementById('uploadForm');
+
+  // Drag-and-drop
+  ['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, ev => {
+    ev.preventDefault(); dropZone.classList.add('drop-zone--active');
+  }));
+  ['dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => {
+    ev.preventDefault(); dropZone.classList.remove('drop-zone--active');
+  }));
+  dropZone.addEventListener('drop', ev => {
+    input.files = ev.dataTransfer.files;
+    renderFiles(ev.dataTransfer.files);
+  });
+
+  input.addEventListener('change', () => renderFiles(input.files));
+
+  function renderFiles(files) {
+    if (!files.length) return;
+    fileList.style.display = 'block';
+    fileList.innerHTML = `<div class="file-list-header">
+      <i class="bi bi-files me-1"></i>${files.length} file${files.length > 1 ? 's' : ''} selected
+    </div>`;
+    Array.from(files).forEach(f => {
+      const ext  = f.name.split('.').pop().toUpperCase();
+      const size = (f.size / 1024).toFixed(0) + ' KB';
+      const ok   = ['PDF','DOCX','DOC'].includes(ext) && f.size <= 10*1024*1024;
+      fileList.innerHTML += `
+        <div class="file-item ${ok ? '' : 'file-item--error'}">
+          <i class="bi bi-file-earmark-${ext === 'PDF' ? 'pdf' : 'word'}-fill me-2"></i>
+          <span class="file-name">${f.name}</span>
+          <span class="file-size text-muted">${size}</span>
+          ${ok ? '<i class="bi bi-check-circle-fill text-success ms-auto"></i>'
+                : '<i class="bi bi-exclamation-circle-fill text-danger ms-auto"></i>'}
+        </div>`;
+    });
+    uploadBtn.disabled = false;
+  }
+
+  form.addEventListener('submit', () => {
+    uploadBtn.querySelector('.upload-idle').classList.add('d-none');
+    uploadBtn.querySelector('.upload-loading').classList.remove('d-none');
+    uploadBtn.disabled = true;
+  });
+})();
+</script>
+{% endblock %}
