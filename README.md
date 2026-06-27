@@ -1,5 +1,5 @@
 # SmartHire AI 🤖
-
+🚀 **Live Demo:** https://smarthire-ai-81nq.onrender.com
 An AI-powered resume screening system built with Django and NLP.
 Ranks candidates against a job description using a two-signal ML pipeline.
 
