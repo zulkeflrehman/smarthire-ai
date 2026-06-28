@@ -29,46 +29,6 @@ Each resume is scored against the job description using two signals:
 
 **Final Score = 0.65 × TF-IDF + 0.35 × Skill Match** (scaled 0–100)
 
----
-
-## Local Setup
-
-### Prerequisites
-- Python 3.10 or 3.11
-- pip
-
-### One-command setup
-```bash
-git clone <your-repo-url>
-cd smarthire_ai
-bash setup.sh
-```
-
-### Manual setup
-```bash
-# 1. Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Download spaCy model
-python -m spacy download en_core_web_sm
-
-# 4. Configure environment
-cp .env.example .env              # then edit .env if needed
-
-# 5. Run migrations
-python manage.py migrate
-
-# 6. Start server
-python manage.py runserver
-```
-
-Open **http://127.0.0.1:8000** in your browser.
-
----
 
 ## Usage
 
