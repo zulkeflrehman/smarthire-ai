@@ -1,5 +1,18 @@
 """
-views.py — All request handlers for SmartHire AI.
+views.py — SmartHire AI 2.0
+
+PRESERVED (unchanged logic):
+  index · job_list · job_create · job_detail · job_delete
+  upload_resumes (+ chunk creation added at end)
+  screen_resumes (+ missing_skills added)
+  results · update_status · export_csv
+
+NEW (RAG features):
+  candidate_detail   → full candidate profile page
+  generate_explanation → AJAX: generate + save AI explanation
+  generate_questions   → AJAX: generate + save interview questions
+  chat_api             → AJAX: answer recruiter question via RAG
+  delete_explanation   → delete so it can be regenerated
 """
 import csv
 import json
@@ -13,10 +26,20 @@ from django.views.decorators.http import require_POST
 
 from .forms import JobForm
 from .ml.pipeline import process_single_resume, rank_resumes
-from .models import Application, Job, Resume
+from .models import (
+    Application, AIExplanation, ChatMessage,
+    InterviewQuestion, Job, Resume, ResumeChunk,
+)
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXISTING VIEWS — preserved, minimal edits marked with # ← v2.0
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def about(request):
+    """Plain-English documentation and how-to page."""
+    return render(request, 'screening/about.html')
+
 
 def index(request):
     recent_jobs    = Job.objects.all()[:6]
@@ -38,8 +61,6 @@ def index(request):
         'use_semantic':   getattr(settings, 'USE_SEMANTIC_SCORING', True),
     })
 
-
-# ── Jobs ──────────────────────────────────────────────────────────────────────
 
 def job_list(request):
     return render(request, 'screening/job_list.html', {'jobs': Job.objects.all()})
@@ -76,15 +97,13 @@ def job_delete(request, job_id):
     return render(request, 'screening/job_confirm_delete.html', {'job': job})
 
 
-# ── Resume upload ─────────────────────────────────────────────────────────────
-
 def upload_resumes(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
 
     if request.method == 'POST':
         files = request.FILES.getlist('resumes')
         if not files:
-            messages.error(request, 'No files selected. Please choose at least one resume.')
+            messages.error(request, 'No files selected.')
             return redirect('upload_resumes', job_id=job_id)
 
         ok, errs = 0, []
@@ -104,6 +123,14 @@ def upload_resumes(request, job_id):
                 resume.education        = meta.get('education', '')
                 resume.experience_years = meta.get('experience_years', 0)
                 resume.save()
+
+                # ← v2.0: chunk and store resume for RAG
+                try:
+                    from .rag.pipeline import chunk_and_store_resume
+                    chunk_and_store_resume(resume, job)
+                except Exception:
+                    pass   # chunking failure must never break upload
+
                 ok += 1
 
             except ValueError as exc:
@@ -122,21 +149,16 @@ def upload_resumes(request, job_id):
     return render(request, 'screening/upload_resumes.html', {'job': job})
 
 
-# ── ML Screening ──────────────────────────────────────────────────────────────
-
 def screen_resumes(request, job_id):
-    """Run the full 3-signal ML pipeline and save Application records."""
     job     = get_object_or_404(Job, pk=job_id)
     resumes = job.resumes.filter(extracted_text__gt='')
 
     if not resumes.exists():
-        messages.warning(request, 'No parsed resumes found. Upload resumes first.')
+        messages.warning(request, 'No parsed resumes. Upload resumes first.')
         return redirect('upload_resumes', job_id=job_id)
 
-    # Read setting — default True (BERT on)
     use_semantic = getattr(settings, 'USE_SEMANTIC_SCORING', True)
-
-    resume_data = [
+    resume_data  = [
         {'id': r.pk, 'text': r.extracted_text, 'skills': r.skills}
         for r in resumes
     ]
@@ -149,8 +171,15 @@ def screen_resumes(request, job_id):
     )
 
     Application.objects.filter(job=job).delete()
+
+    job_skills = set(job.get_skills_list())
+
     for r in results:
         resume = resumes.get(pk=r['id'])
+        # ← v2.0: compute missing_skills
+        candidate_skills = set(s.lower() for s in resume.skills)
+        missing = sorted(job_skills - candidate_skills)
+
         Application.objects.create(
             resume         = resume,
             job            = job,
@@ -159,6 +188,7 @@ def screen_resumes(request, job_id):
             semantic_score = r['semantic_score'],
             final_score    = r['final_score'],
             matched_skills = r['matched_skills'],
+            missing_skills = missing,           # ← v2.0
             rank           = r['rank'],
         )
 
@@ -166,8 +196,6 @@ def screen_resumes(request, job_id):
     messages.success(request, f'Screened {len(results)} resume(s) using {mode} scoring.')
     return redirect('results', job_id=job_id)
 
-
-# ── Results ───────────────────────────────────────────────────────────────────
 
 def results(request, job_id):
     job      = get_object_or_404(Job, pk=job_id)
@@ -178,10 +206,7 @@ def results(request, job_id):
         return redirect('job_detail', job_id=job_id)
 
     status_filter = request.GET.get('status', 'all')
-    if status_filter in ('pending', 'shortlisted', 'rejected'):
-        displayed = all_apps.filter(status=status_filter)
-    else:
-        displayed = all_apps
+    displayed = all_apps.filter(status=status_filter) if status_filter != 'all' else all_apps
 
     paginator = Paginator(displayed, 15)
     page_obj  = paginator.get_page(request.GET.get('page', 1))
@@ -194,7 +219,6 @@ def results(request, job_id):
     for s in scores:
         buckets[min(int(s // 10), 9)] += 1
 
-    # Check if BERT was actually used (semantic_score > 0 on any record)
     used_semantic = all_apps.filter(semantic_score__gt=0).exists()
 
     return render(request, 'screening/results.html', {
@@ -210,8 +234,6 @@ def results(request, job_id):
         'used_semantic': used_semantic,
     })
 
-
-# ── AJAX status update ────────────────────────────────────────────────────────
 
 @require_POST
 def update_status(request, app_id):
@@ -230,8 +252,6 @@ def update_status(request, app_id):
         return JsonResponse({'ok': False, 'error': 'Bad request'}, status=400)
 
 
-# ── CSV export ────────────────────────────────────────────────────────────────
-
 def export_csv(request, job_id):
     job      = get_object_or_404(Job, pk=job_id)
     all_apps = job.applications.select_related('resume').all()
@@ -243,16 +263,180 @@ def export_csv(request, job_id):
     writer = csv.writer(response)
     writer.writerow([
         'Rank', 'Candidate', 'Email', 'Phone',
-        'Final Score (%)', 'BERT Semantic (%)', 'TF-IDF (%)', 'Skill Match (%)',
-        'Matched Skills', 'Education', 'Exp (yrs)', 'Status',
+        'Final Score (%)', 'BERT (%)', 'TF-IDF (%)', 'Skill (%)',
+        'Matched Skills', 'Missing Skills', 'Education', 'Exp (yrs)',
+        'Status', 'AI Recommendation',
     ])
     for app in all_apps:
         r = app.resume
+        rec = ''
+        if app.has_explanation:
+            rec = app.ai_explanation.hiring_recommendation[:80]
         writer.writerow([
             app.rank, r.candidate_name, r.candidate_email, r.candidate_phone,
             app.final_score, app.semantic_score, app.tfidf_score, app.skill_score,
             ', '.join(app.matched_skills),
+            ', '.join(app.missing_skills),
             r.education, r.experience_years,
             app.get_status_display(),
+            rec,
         ])
     return response
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NEW VIEWS — SmartHire AI 2.0 RAG features
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def candidate_detail(request, app_id):
+    """
+    Full candidate profile page with scores, skills, AI explanation,
+    interview questions, and chatbot.
+    """
+    app    = get_object_or_404(Application, pk=app_id)
+    resume = app.resume
+    job    = app.job
+
+    explanation = getattr(app, 'ai_explanation', None)
+    questions   = app.interview_questions.all()
+    chat_history = app.chat_messages.all()
+    chunks_count = ResumeChunk.objects.filter(resume=resume, job=job).count()
+
+    groq_configured = bool(
+        getattr(settings, 'GROQ_API_KEY', '') or
+        getattr(settings, 'GEMINI_API_KEY', '')
+    )
+
+    return render(request, 'screening/candidate_detail.html', {
+        'app':              app,
+        'resume':           resume,
+        'job':              job,
+        'explanation':      explanation,
+        'questions':        questions,
+        'chat_history':     chat_history,
+        'chunks_count':     chunks_count,
+        'groq_configured':  groq_configured,
+        'used_semantic':    app.semantic_score > 0,
+    })
+
+
+@require_POST
+def generate_explanation(request, app_id):
+    """
+    AJAX — generate and save AI explanation for a candidate.
+    Returns JSON.
+    """
+    app = get_object_or_404(Application, pk=app_id)
+
+    # Delete existing so it gets regenerated
+    AIExplanation.objects.filter(application=app).delete()
+
+    try:
+        from .rag.pipeline import run_explanation_pipeline
+        result = run_explanation_pipeline(app)
+
+        expl = AIExplanation.objects.create(
+            application               = app,
+            summary                   = result.get('summary', ''),
+            strengths                 = result.get('strengths', ''),
+            weaknesses                = result.get('weaknesses', ''),
+            missing_skills_explanation = result.get('missing_skills_explanation', ''),
+            hiring_recommendation     = result.get('hiring_recommendation', ''),
+            raw_text                  = result.get('raw_text', ''),
+        )
+        return JsonResponse({
+            'ok':                      True,
+            'summary':                 expl.summary,
+            'strengths':               expl.strengths,
+            'weaknesses':              expl.weaknesses,
+            'missing_explanation':     expl.missing_skills_explanation,
+            'recommendation':          expl.hiring_recommendation,
+            'recommendation_badge':    expl.recommendation_badge,
+        })
+
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@require_POST
+def generate_questions(request, app_id):
+    """
+    AJAX — generate and save interview questions for a candidate.
+    Returns JSON.
+    """
+    app = get_object_or_404(Application, pk=app_id)
+    InterviewQuestion.objects.filter(application=app).delete()
+
+    try:
+        from .rag.pipeline import run_questions_pipeline
+        questions_data = run_questions_pipeline(app)
+
+        objs = [
+            InterviewQuestion(
+                application   = app,
+                question      = q['question'],
+                question_type = q['question_type'],
+                order         = q['order'],
+            )
+            for q in questions_data
+        ]
+        InterviewQuestion.objects.bulk_create(objs)
+        saved = app.interview_questions.all()
+
+        return JsonResponse({
+            'ok':        True,
+            'questions': [
+                {
+                    'question':      q.question,
+                    'question_type': q.get_question_type_display(),
+                    'type_raw':      q.question_type,
+                    'badge':         q.badge_colour,
+                    'order':         q.order,
+                }
+                for q in saved
+            ],
+        })
+
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@require_POST
+def chat_api(request, app_id):
+    """
+    AJAX — answer a recruiter question about a candidate via RAG.
+    Returns JSON.
+    """
+    app = get_object_or_404(Application, pk=app_id)
+
+    try:
+        data     = json.loads(request.body)
+        question = data.get('question', '').strip()
+        if not question:
+            return JsonResponse({'ok': False, 'error': 'Question cannot be empty.'}, status=400)
+
+        from .rag.pipeline import run_chat_pipeline
+        result = run_chat_pipeline(question, app)
+
+        ChatMessage.objects.create(
+            application   = app,
+            question      = question,
+            answer        = result['answer'],
+            source_chunks = result['source_chunks'],
+        )
+        return JsonResponse({
+            'ok':           True,
+            'answer':       result['answer'],
+            'source_chunks': result['source_chunks'],
+        })
+
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@require_POST
+def delete_explanation(request, app_id):
+    """Delete existing explanation so it can be regenerated."""
+    app = get_object_or_404(Application, pk=app_id)
+    AIExplanation.objects.filter(application=app).delete()
+    return JsonResponse({'ok': True})

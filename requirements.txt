@@ -5,7 +5,7 @@ whitenoise==6.6.0
 python-decouple==3.8
 
 # ── Database ──────────────────────────────────────────────────────────────────
-psycopg2-binary==2.9.9
+# psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 
 # ── Resume parsing ────────────────────────────────────────────────────────────
@@ -13,15 +13,17 @@ pdfplumber==0.10.3
 python-docx==1.1.0
 
 # ── NLP & ML — Signal 1 + 2 ──────────────────────────────────────────────────
-spacy==3.7.4                   # NER for candidate name extraction
-scikit-learn==1.4.0            # TF-IDF + cosine similarity
-numpy==1.26.3
+spacy>=3.8.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
 
-# ── ML — Signal 3: BERT Semantic Scoring ─────────────────────────────────────
-# Model: all-MiniLM-L6-v2  (~80 MB, downloaded once, cached)
-# Speed: ~0.5–2 s per resume on CPU (Core i5 8th gen)
-# Captures semantic meaning — "built REST APIs" ≈ "designed web services"
-sentence-transformers==2.7.0
+# ── ML — Signal 3: BERT + RAG retrieval ──────────────────────────────────────
+sentence-transformers>=2.7.0
+
+# ── RAG — LLM generation ─────────────────────────────────────────────────────
+groq==1.5.0                    # Groq API (free — llama-3.1-8b-instant)
+httpx>=0.27.0,<0.28.0          # pinned: groq 1.5.0 is incompatible with httpx 0.28+
+# google-generativeai==0.7.0   # Gemini fallback (uncomment if needed)
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
-Pillow==10.2.0
+Pillow>=10.2.0

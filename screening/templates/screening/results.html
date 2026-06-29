@@ -18,97 +18,101 @@
 
 {% block content %}
 
-<!-- ── Scoring mode badge ───────────────────────────────────────────── -->
+<!-- Global SVG Glow Filter -->
+<svg style="display: none;">
+  <defs>
+    <filter id="glow-ring" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
 {% if used_semantic %}
   <div class="mode-badge mode-badge--bert mb-4">
     <i class="bi bi-stars me-2"></i>
-    <strong>3-Signal Scoring Active:</strong>
-    BERT Semantic (45%) + TF-IDF (35%) + Skill Match (20%)
+    <strong>3-Signal Scoring:</strong> BERT Semantic (45%) + TF-IDF (35%) + Skill Match (20%)
+    &nbsp;·&nbsp; <span style="opacity:.8">Click any candidate to view AI profile →</span>
   </div>
 {% else %}
   <div class="mode-badge mode-badge--tfidf mb-4">
     <i class="bi bi-search me-2"></i>
-    <strong>2-Signal Scoring:</strong>
-    TF-IDF (65%) + Skill Match (35%) — enable BERT in settings for better accuracy
+    <strong>2-Signal Scoring:</strong> TF-IDF (65%) + Skill Match (35%)
+    &nbsp;·&nbsp; <span style="opacity:.7">Set USE_SEMANTIC_SCORING=True to enable BERT</span>
   </div>
 {% endif %}
 
-<!-- ── Summary stats ────────────────────────────────────────────────── -->
+<!-- Stats -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="mini-stat">
-      <div class="mini-stat-val">{{ total_count }}</div>
-      <div class="mini-stat-label">Candidates</div>
+  <div class="col-6 col-md-3"><div class="mini-stat"><div class="mini-stat-val">{{ total_count }}</div><div class="mini-stat-label">Candidates</div></div></div>
+  <div class="col-6 col-md-3"><div class="mini-stat"><div class="mini-stat-val">{{ avg_score }}%</div><div class="mini-stat-label">Avg Score</div></div></div>
+  <div class="col-6 col-md-3"><div class="mini-stat"><div class="mini-stat-val">{{ top_score }}%</div><div class="mini-stat-label">Top Score</div></div></div>
+  <div class="col-6 col-md-3"><div class="mini-stat mini-stat--green"><div class="mini-stat-val">{{ shortlisted }}</div><div class="mini-stat-label">Shortlisted</div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Chart -->
+  <div class="col-lg-7">
+    <div class="card-panel h-100 mb-0">
+      <div class="panel-header">
+        <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Score Distribution</span>
+        <span class="text-muted small">Click bars to filter list below</span>
+      </div>
+      <div class="chart-wrap" style="height: 220px;"><canvas id="scoreChart"></canvas></div>
+      <div class="chart-legend mt-2">
+        <span class="legend-dot legend-dot--purple"></span>High ≥65%
+        <span class="legend-dot legend-dot--green ms-3"></span>Mid 35–64%
+        <span class="legend-dot legend-dot--yellow ms-3"></span>Low &lt;35%
+      </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="mini-stat">
-      <div class="mini-stat-val">{{ avg_score }}%</div>
-      <div class="mini-stat-label">Avg Score</div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="mini-stat">
-      <div class="mini-stat-val">{{ top_score }}%</div>
-      <div class="mini-stat-label">Top Score</div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="mini-stat mini-stat--green">
-      <div class="mini-stat-val">{{ shortlisted }}</div>
-      <div class="mini-stat-label">Shortlisted</div>
+
+  <!-- Weights breakdown -->
+  <div class="col-lg-5">
+    <div class="card-panel h-100 mb-0">
+      <div class="panel-header">
+        <span><i class="bi bi-sliders me-2 text-primary"></i>Scoring Weights</span>
+      </div>
+      <div class="p-4 d-flex flex-column justify-content-center" style="min-height: 220px;">
+        {% if used_semantic %}
+        <div class="weight-row mb-3">
+          <span class="weight-label"><i class="bi bi-stars text-indigo"></i> BERT Semantic</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--bert" style="width:45%"></div></div>
+          <span class="weight-pct">45%</span>
+        </div>
+        <div class="weight-row mb-3">
+          <span class="weight-label"><i class="bi bi-search text-blue"></i> TF-IDF Relevance</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--tfidf" style="width:35%"></div></div>
+          <span class="weight-pct">35%</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label"><i class="bi bi-tag text-teal"></i> Skill Matching</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--skill" style="width:20%"></div></div>
+          <span class="weight-pct">20%</span>
+        </div>
+        {% else %}
+        <div class="weight-row mb-3">
+          <span class="weight-label"><i class="bi bi-search text-blue"></i> TF-IDF Relevance</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--tfidf" style="width:65%"></div></div>
+          <span class="weight-pct">65%</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label"><i class="bi bi-tag text-teal"></i> Skill Matching</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--skill" style="width:35%"></div></div>
+          <span class="weight-pct">35%</span>
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
 
 <div class="row g-4">
-
-  <!-- Score distribution -->
-  <div class="col-lg-4">
-    <div class="card-panel h-100">
-      <div class="panel-header">
-        <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Score Distribution</span>
-      </div>
-      <div class="chart-wrap">
-        <canvas id="scoreChart"></canvas>
-      </div>
-      <div class="chart-legend mt-3">
-        <span class="legend-dot legend-dot--green"></span>High ≥65%
-        <span class="legend-dot legend-dot--yellow ms-3"></span>Mid 35–64%
-        <span class="legend-dot legend-dot--red ms-3"></span>Low &lt;35%
-      </div>
-
-      {% if used_semantic %}
-      <!-- Signal weight breakdown -->
-      <div class="weight-breakdown">
-        <div class="weight-row">
-          <span class="weight-label"><i class="bi bi-stars text-indigo"></i> BERT Semantic</span>
-          <div class="weight-bar-wrap">
-            <div class="weight-bar weight-bar--bert" style="width:45%"></div>
-          </div>
-          <span class="weight-pct">45%</span>
-        </div>
-        <div class="weight-row">
-          <span class="weight-label"><i class="bi bi-search text-blue"></i> TF-IDF</span>
-          <div class="weight-bar-wrap">
-            <div class="weight-bar weight-bar--tfidf" style="width:35%"></div>
-          </div>
-          <span class="weight-pct">35%</span>
-        </div>
-        <div class="weight-row">
-          <span class="weight-label"><i class="bi bi-tag text-teal"></i> Skill Match</span>
-          <div class="weight-bar-wrap">
-            <div class="weight-bar weight-bar--skill" style="width:20%"></div>
-          </div>
-          <span class="weight-pct">20%</span>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
   <!-- Results table -->
-  <div class="col-lg-8">
+  <div class="col-12">
     <div class="card-panel">
       <div class="panel-header">
         <span><i class="bi bi-people-fill me-2 text-primary"></i>Ranked Candidates</span>
@@ -120,30 +124,55 @@
         </div>
       </div>
 
+      <!-- Interactive Real-time Search & Filters -->
+      <div class="px-4 py-3 border-bottom" style="background: rgba(255, 255, 255, 0.015); border-color: var(--border-subtle) !important;">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-6">
+            <div class="position-relative">
+              <i class="bi bi-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+              <input type="text" id="candidateSearch" class="form-control" placeholder="Search by name, email, or skills..." style="padding-left: 36px; height: 38px; font-size: 13px; background: rgba(10,10,10,0.6); border: 1px solid var(--border-subtle); border-radius: 8px; color: #fff;">
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <select id="scoreTierFilter" class="form-select status-select w-100" style="height: 38px; font-size: 13px; background-color: rgba(10,10,10,0.6);">
+              <option value="all">All Match Scores</option>
+              <option value="high">High (≥65%)</option>
+              <option value="medium">Mid (35-64%)</option>
+              <option value="low">Low (&lt;35%)</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <select id="statusFilterSelect" class="form-select status-select w-100" style="height: 38px; font-size: 13px; background-color: rgba(10,10,10,0.6);">
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
               <th width="36">#</th>
               <th>Candidate</th>
-              <th width="74">Final</th>
-              {% if used_semantic %}
-              <th width="66">BERT</th>
-              {% endif %}
+              <th width="74">Score</th>
+              {% if used_semantic %}<th width="66">BERT</th>{% endif %}
               <th width="66">TF-IDF</th>
-              <th>Skills matched</th>
+              <th>Matched Skills</th>
               <th width="120">Status</th>
+              <th width="80">AI Profile</th>
             </tr>
           </thead>
           <tbody>
             {% for app in page_obj %}
-              <tr data-app-id="{{ app.pk }}">
+              <tr class="candidate-row" id="row-{{ app.pk }}" data-candidate-id="{{ app.pk }}" data-score-tier="{{ app.score_tier }}" data-status="{{ app.status }}" onclick="toggleExpandRow(this)">
                 <td class="rank-cell">{{ app.rank }}</td>
                 <td>
                   <div class="candidate-cell">
-                    <div class="candidate-avatar candidate-avatar--{{ app.score_css_class }}">
-                      {{ app.resume.candidate_name|first|upper }}
-                    </div>
+                    <div class="candidate-avatar candidate-avatar--{{ app.score_css_class }}">{{ app.resume.candidate_name|first|upper }}</div>
                     <div>
                       <div class="fw-500">{{ app.resume.candidate_name }}</div>
                       <div class="small text-muted">{{ app.resume.candidate_email }}</div>
@@ -151,15 +180,15 @@
                   </div>
                 </td>
                 <td>
-                  <!-- Animated SVG score ring -->
-                  <div class="score-ring-mini" title="Final composite score">
+                  <div class="score-ring-mini" title="TF-IDF: {{ app.tfidf_score }}% | Skills: {{ app.skill_score }}%{% if used_semantic %} | BERT: {{ app.semantic_score }}%{% endif %}">
                     <svg viewBox="0 0 40 40" class="score-svg">
-                      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(15, 23, 42, 0.08)" stroke-width="4"/>
+                      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
                       <circle cx="20" cy="20" r="16" fill="none"
-                              stroke="{% if app.score_tier == 'high' %}#059669{% elif app.score_tier == 'medium' %}#D97706{% else %}#E11D48{% endif %}"
+                              stroke="{% if app.score_tier == 'high' %}#10b981{% elif app.score_tier == 'medium' %}#f59e0b{% else %}#ef4444{% endif %}"
                               stroke-width="4" stroke-linecap="round"
                               stroke-dasharray="100.5"
                               stroke-dashoffset="{{ app.final_score|dash_offset }}"
+                              filter="url(#glow-ring)"
                               transform="rotate(-90 20 20)"/>
                     </svg>
                     <span class="score-ring-val">{{ app.final_score|floatformat:0 }}%</span>
@@ -172,33 +201,91 @@
                   </span>
                 </td>
                 {% endif %}
-                <td>
-                  <span class="mini-score">{{ app.tfidf_score|floatformat:0 }}%</span>
-                </td>
+                <td><span class="mini-score">{{ app.tfidf_score|floatformat:0 }}%</span></td>
                 <td>
                   <div class="matched-skills">
-                    {% for sk in app.matched_skills|slice:":4" %}
+                    {% for sk in app.matched_skills|slice:":3" %}
                       <span class="skill-tag skill-tag--matched">{{ sk }}</span>
                     {% empty %}
                       <span class="text-muted small">—</span>
                     {% endfor %}
-                    {% if app.matched_skills|length > 4 %}
-                      <span class="skill-tag skill-tag--more">+{{ app.matched_skills|length|add:"-4" }}</span>
+                    {% if app.matched_skills|length > 3 %}
+                      <span class="skill-tag skill-tag--more">+{{ app.matched_skills|length|add:"-3" }}</span>
                     {% endif %}
                   </div>
                 </td>
                 <td>
                   <select class="status-select status-select--{{ app.status }}"
-                          data-app-id="{{ app.pk }}"
-                          onchange="updateStatus(this)">
+                          data-app-id="{{ app.pk }}" onchange="updateStatus(this)">
                     <option value="pending"     {% if app.status == 'pending' %}selected{% endif %}>Pending</option>
                     <option value="shortlisted" {% if app.status == 'shortlisted' %}selected{% endif %}>Shortlisted ✓</option>
                     <option value="rejected"    {% if app.status == 'rejected' %}selected{% endif %}>Rejected ✗</option>
                   </select>
                 </td>
+                <!-- ← NEW v2.0: View Full AI Profile link -->
+                <td>
+                  <a href="{% url 'candidate_detail' app.pk %}"
+                     class="btn btn-ghost btn-sm"
+                     style="font-size:11px;padding:3px 8px"
+                     title="View AI profile, explanation &amp; chatbot">
+                    {% if app.has_explanation %}
+                      <i class="bi bi-robot text-primary"></i> AI ✓
+                    {% else %}
+                      <i class="bi bi-person-lines-fill"></i> View
+                    {% endif %}
+                  </a>
+                </td>
+              </tr>
+              <!-- Expandable Drawer row -->
+              <tr class="expandable-row d-none" id="details-{{ app.pk }}">
+                <td colspan="{% if used_semantic %}8{% else %}7{% endif %}">
+                  <div class="expandable-content px-4 py-3">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <div class="info-block">
+                          <div class="info-block-title mb-2">
+                            <i class="bi bi-patch-check-fill text-indigo me-1"></i> Matched Skills ({{ app.matched_skills|length }})
+                          </div>
+                          <div class="matched-skills">
+                            {% for sk in app.matched_skills %}
+                              <span class="skill-tag skill-tag--matched">{{ sk }}</span>
+                            {% empty %}
+                              <span class="text-muted small">No direct skill matches identified in resume text.</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="info-block">
+                          <div class="info-block-title mb-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Missing Skills ({{ app.missing_skills|length }})
+                          </div>
+                          <div class="matched-skills">
+                            {% for sk in app.missing_skills %}
+                              <span class="skill-tag skill-tag--missing">{{ sk }}</span>
+                            {% empty %}
+                              <span class="text-success small"><i class="bi bi-check-circle-fill"></i> Candidate has all required skills!</span>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-12 mt-2 pt-3 border-top border-secondary-subtle d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                        <div class="d-flex gap-4">
+                          <div><span class="text-muted small">Education:</span> <strong class="text-white small">{{ app.resume.education|default:"Not specified" }}</strong></div>
+                          <div><span class="text-muted small">Experience:</span> <strong class="text-white small">{{ app.resume.experience_years }} year{{ app.resume.experience_years|pluralize }}</strong></div>
+                        </div>
+                        <div>
+                          <a href="{% url 'candidate_detail' app.pk %}" class="btn btn-primary btn-sm px-3" style="font-size: 12px; padding: 5px 12px;">
+                            <i class="bi bi-robot me-1"></i> Open AI Profile
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
               </tr>
             {% empty %}
-              <tr><td colspan="8" class="text-center text-muted py-4">No candidates match this filter.</td></tr>
+              <tr><td colspan="9" class="text-center text-muted py-4">No candidates match this filter.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -219,7 +306,6 @@
       {% endif %}
     </div>
   </div>
-
 </div>
 {% endblock %}
 
@@ -227,44 +313,150 @@
 <script>
 const buckets = {{ buckets_json }};
 const labels  = ['0–9','10–19','20–29','30–39','40–49','50–59','60–69','70–79','80–89','90–100'];
-const colors  = buckets.map((_, i) => i >= 7 ? '#059669' : i >= 4 ? '#D97706' : '#E11D48');
-
-new Chart(document.getElementById('scoreChart'), {
-  type: 'bar',
-  data: { labels, datasets: [{ data: buckets, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { 
-        beginAtZero: true, 
-        ticks: { stepSize: 1, color: '#64748b', font: { size: 11, family: 'Inter' } }, 
-        grid: { color: 'rgba(0, 0, 0, 0.05)' } 
+const colors  = buckets.map((_,i) => i>=7?'#8b5cf6':i>=4?'#10b981':'#f59e0b');
+const chartInst = new Chart(document.getElementById('scoreChart'), {
+  type:'bar',
+  data:{labels,datasets:[{data:buckets,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        let targetTier = 'all';
+        if (index >= 7) targetTier = 'high';
+        else if (index >= 4) targetTier = 'medium';
+        else targetTier = 'low';
+        
+        const scoreFilter = document.getElementById('scoreTierFilter');
+        if (scoreFilter) {
+          scoreFilter.value = targetTier;
+          scoreFilter.dispatchEvent(new Event('change'));
+        }
+      }
+    },
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'rgba(12, 12, 12, 0.95)',
+        titleColor:'#FFFFFF',
+        bodyColor:'#94A3B8',
+        borderColor:'rgba(139, 92, 246, 0.45)',
+        borderWidth:1,
+        cornerRadius:8,
+        displayColors:false,
+        titleFont:{family:'Plus Jakarta Sans',weight:'bold'},
+        bodyFont:{family:'Inter'}
+      }
+    },
+    scales:{
+      y:{
+        beginAtZero:true,
+        ticks:{stepSize:1,color:'#94A3B8',font:{size:11,family:'Inter'}},
+        grid:{color:'rgba(255, 255, 255, 0.04)'}
       },
-      x: { 
-        ticks: { color: '#64748b', font: { size: 10, family: 'Inter' } }, 
-        grid: { display: false } 
-      },
+      x:{
+        ticks:{color:'#94A3B8',font:{size:10,family:'Inter'}},
+        grid:{display:false}
+      }
     }
   }
 });
 
-function updateStatus(select) {
-  fetch(`/applications/${select.dataset.appId}/status/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-    body: JSON.stringify({ status: select.value }),
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.ok) select.className = `status-select status-select--${select.value}`;
-    else alert('Update failed: ' + (d.error || 'error'));
+// Expandable Detail Row logic
+function toggleExpandRow(row) {
+  const target = event.target;
+  // If clicked inside an interactive element, do not expand
+  if (target.tagName === 'SELECT' || target.tagName === 'A' || target.closest('a') || target.closest('select')) {
+    return;
+  }
+  const appId = row.dataset.candidateId;
+  const detailsRow = document.getElementById(`details-${appId}`);
+  if (detailsRow) {
+    const isHidden = detailsRow.classList.contains('d-none');
+    
+    // Close other expanded rows for cleanliness
+    document.querySelectorAll('.expandable-row').forEach(r => r.classList.add('d-none'));
+    document.querySelectorAll('.candidate-row').forEach(r => r.classList.remove('row-expanded'));
+    
+    if (isHidden) {
+      detailsRow.classList.remove('d-none');
+      row.classList.add('row-expanded');
+    }
+  }
+}
+
+// Client-side search and filters logic
+const searchInput = document.getElementById('candidateSearch');
+const scoreFilter = document.getElementById('scoreTierFilter');
+const statusFilter = document.getElementById('statusFilterSelect');
+
+function filterCandidates() {
+  const query = searchInput.value.toLowerCase().trim();
+  const selectedScore = scoreFilter.value;
+  const selectedStatus = statusFilter.value;
+  
+  const rows = document.querySelectorAll('.candidate-row');
+  rows.forEach(row => {
+    const appId = row.dataset.candidateId;
+    const detailsRow = document.getElementById(`details-${appId}`);
+    
+    const name = row.querySelector('.candidate-cell .fw-500').textContent.toLowerCase();
+    const email = row.querySelector('.candidate-cell .text-muted').textContent.toLowerCase();
+    
+    // Collect all matched skills for search matching
+    let skills = [];
+    if (detailsRow) {
+      detailsRow.querySelectorAll('.skill-tag--matched').forEach(t => {
+        skills.push(t.textContent.toLowerCase());
+      });
+    }
+    const skillsText = skills.join(' ');
+    
+    const tier = row.dataset.scoreTier;
+    const status = row.dataset.status;
+    
+    const matchesSearch = !query || name.includes(query) || email.includes(query) || skillsText.includes(query);
+    const matchesScore = selectedScore === 'all' || tier === selectedScore;
+    const matchesStatus = selectedStatus === 'all' || status === selectedStatus;
+    
+    if (matchesSearch && matchesScore && matchesStatus) {
+      row.classList.remove('d-none');
+    } else {
+      row.classList.add('d-none');
+      if (detailsRow) detailsRow.classList.add('d-none');
+      row.classList.remove('row-expanded');
+    }
   });
 }
 
-function getCookie(name) {
-  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-  return v ? v[2] : null;
+if (searchInput) searchInput.addEventListener('input', filterCandidates);
+if (scoreFilter) scoreFilter.addEventListener('change', filterCandidates);
+if (statusFilter) statusFilter.addEventListener('change', filterCandidates);
+
+function updateStatus(select) {
+  const appId = select.dataset.appId;
+  const newStatus = select.value;
+  fetch(`/applications/${appId}/status/`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+    body:JSON.stringify({status:newStatus}),
+  })
+  .then(r=>r.json())
+  .then(d=>{ 
+    if(d.ok) {
+      select.className=`status-select status-select--${newStatus}`; 
+      const row = document.getElementById(`row-${appId}`);
+      if (row) {
+        row.dataset.status = newStatus;
+      }
+      filterCandidates();
+    } else { 
+      alert('Update failed.'); 
+    } 
+  });
 }
+
+function getCookie(name){const v=document.cookie.match('(^|;) ?'+name+'=([^;]*)(;|$)');return v?v[2]:null;}
 </script>
 {% endblock %}

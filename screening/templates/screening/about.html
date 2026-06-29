@@ -1,0 +1,307 @@
+{% extends 'screening/base.html' %}
+{% load static %}
+{% block title %}About & How to Use — SmartHire AI{% endblock %}
+{% block page_title %}About SmartHire AI{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 0 auto;">
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <div class="card-panel mb-4" style="background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(16,185,129,0.08)); border-color: rgba(139,92,246,0.3);">
+    <div style="padding: 36px 32px;">
+      <div style="display:flex; align-items:center; gap:20px; margin-bottom: 20px;">
+        <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#8b5cf6,#10b981); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0;">
+          🤖
+        </div>
+        <div>
+          <h1 style="font-size:28px; font-weight:800; margin:0 0 6px; color:#fff;">What is SmartHire AI?</h1>
+          <p style="color: var(--text-secondary); margin:0; font-size:15px;">Your AI-powered hiring assistant — explained in plain English</p>
+        </div>
+      </div>
+      <p style="font-size:16px; line-height:1.8; color: var(--text-secondary); margin:0;">
+        SmartHire AI is a tool that <strong style="color:#fff;">automatically reads and ranks job applicants' resumes</strong> so you don't have to
+        read them all yourself. You paste a job description, upload CVs, and the AI scores every candidate
+        and sorts them from best match to worst — in seconds.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Who is it for ─────────────────────────────────────────────────── -->
+  <div class="card-panel mb-4">
+    <div class="panel-header"><span><i class="bi bi-people-fill me-2 text-primary"></i>Who is this for?</span></div>
+    <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.2); border-radius:12px; padding:20px;">
+        <div style="font-size:24px; margin-bottom:10px;">🏢</div>
+        <div style="font-weight:700; color:#fff; margin-bottom:6px;">HR Managers & Recruiters</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.6;">Stop spending hours reading CVs. Screen 50 resumes in the time it normally takes to read 3.</div>
+      </div>
+      <div style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius:12px; padding:20px;">
+        <div style="font-size:24px; margin-bottom:10px;">🚀</div>
+        <div style="font-weight:700; color:#fff; margin-bottom:6px;">Startup Founders</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.6;">Hire smarter without a dedicated HR team. Get ranked results and AI insights instantly.</div>
+      </div>
+      <div style="background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius:12px; padding:20px;">
+        <div style="font-size:24px; margin-bottom:10px;">🎓</div>
+        <div style="font-weight:700; color:#fff; margin-bottom:6px;">CS / AI Students</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.6;">A real-world project using NLP, BERT, TF-IDF, RAG, and Django — ready to study and build on.</div>
+      </div>
+      <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius:12px; padding:20px;">
+        <div style="font-size:24px; margin-bottom:10px;">👨‍💼</div>
+        <div style="font-weight:700; color:#fff; margin-bottom:6px;">Freelance Consultants</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.6;">Offer AI-powered resume screening as a service to your clients — it's free to host.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step by step ───────────────────────────────────────────────────── -->
+  <div class="card-panel mb-4">
+    <div class="panel-header"><span><i class="bi bi-list-ol me-2 text-primary"></i>How to Use It — Step by Step</span></div>
+    <div style="padding: 8px 0;">
+
+      {% for step in steps %}{% endfor %}
+
+      <div style="display:flex; gap:0; flex-direction:column;">
+
+        <!-- Step 1 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">1</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Create a Job Posting</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Click <strong style="color:var(--primary)">New Job</strong> in the sidebar. Fill in the job title, paste the full job description,
+              and list the required skills (e.g. <code>Python, Django, SQL</code>). This tells the AI what the perfect candidate looks like.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">2</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Upload Resumes</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Click <strong style="color:var(--primary)">Upload Resumes</strong> on the job page. Drag and drop up to
+              <strong style="color:#fff;">50 PDF or DOCX files</strong> at once. The system automatically extracts the
+              candidate's name, email, skills, education, and experience from each file.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">3</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Run the AI Screening</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Click <strong style="color:var(--primary)">Screen Resumes</strong>. The AI pipeline runs in seconds.
+              It reads every resume, compares it to your job description using three different AI signals,
+              and gives each candidate a score from 0–100.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">4</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Review the Ranked Results</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              See all candidates ranked #1 to #N by their match score. Use the
+              <strong style="color:#fff;">search box</strong> to find specific candidates,
+              use the <strong style="color:#fff;">score filter</strong> to focus on top matches,
+              or click the <strong style="color:#fff;">chart bars</strong> to filter by score range.
+              <strong style="color:#fff;">Click any row</strong> to expand it and see that candidate's full skill breakdown inline.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">5</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Open the AI Profile (Optional)</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Click <strong style="color:var(--primary)">AI Profile</strong> to open the full candidate page. There you can:
+              <ul style="margin-top:8px; padding-left:18px; display:flex; flex-direction:column; gap:4px;">
+                <li>Generate an <strong style="color:#fff;">AI written evaluation</strong> — strengths, weaknesses, recommendation</li>
+                <li>Get <strong style="color:#fff;">10 tailored interview questions</strong> based on their resume</li>
+                <li><strong style="color:#fff;">Chat with the AI</strong> — ask anything like "Why is this person a good fit?" or "What skills are they missing?"</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div style="display:flex; gap:20px; padding:24px 28px; border-bottom:1px solid var(--border-subtle);">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">6</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Shortlist or Reject</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Use the <strong style="color:#fff;">Status dropdown</strong> on each candidate row to mark them as
+              <span style="color:#10b981; font-weight:700;">Shortlisted ✓</span>,
+              <span style="color:#ef4444; font-weight:700;">Rejected ✗</span>, or leave as Pending.
+              Changes save instantly — no page reload needed.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 7 -->
+        <div style="display:flex; gap:20px; padding:24px 28px;">
+          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0;">7</div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px; font-size:15px;">Export Results</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              Click <strong style="color:var(--primary)">Export CSV</strong> at the top right to download all results
+              as a spreadsheet — including scores, skills, education, experience, and AI recommendation.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── How scoring works ──────────────────────────────────────────────── -->
+  <div class="card-panel mb-4">
+    <div class="panel-header"><span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>How the Scoring Works — Simple Explanation</span></div>
+    <div style="padding: 24px;">
+      <p style="color: var(--text-secondary); font-size:13px; margin-bottom:24px; line-height:1.7;">
+        Every resume gets a score from <strong style="color:#fff;">0 to 100</strong>. The score is calculated using three different
+        AI signals, each looking at the resume from a different angle:
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <!-- BERT -->
+        <div style="background: rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:12px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="background:rgba(139,92,246,0.2); color:#c4b5fd; border-radius:8px; padding:8px 12px; font-weight:800; font-size:13px; flex-shrink:0;">BERT<br><span style="font-size:18px;">45%</span></div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px;">Semantic Meaning Match</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              This is the smartest signal. It reads the <em>meaning</em> of the resume, not just the exact words.
+              So if the job says "build REST APIs" and the resume says "developed web services", BERT knows they mean the same thing.
+              It's like having someone who actually understands context, not just keywords.
+            </div>
+          </div>
+        </div>
+
+        <!-- TF-IDF -->
+        <div style="background: rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="background:rgba(59,130,246,0.2); color:#93c5fd; border-radius:8px; padding:8px 12px; font-weight:800; font-size:13px; flex-shrink:0;">TF-IDF<br><span style="font-size:18px;">35%</span></div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px;">Keyword Relevance Match</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              This signal counts how many important words from the job description also appear in the resume,
+              and gives more weight to words that are rare and specific (like a technology name) versus
+              common words (like "the" or "and"). Classic, fast, and reliable.
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div style="background: rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="background:rgba(16,185,129,0.2); color:#6ee7b7; border-radius:8px; padding:8px 12px; font-weight:800; font-size:13px; flex-shrink:0;">Skills<br><span style="font-size:18px;">20%</span></div>
+          <div>
+            <div style="font-weight:700; color:#fff; margin-bottom:6px;">Direct Skill Match</div>
+            <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+              This simply checks: of the required skills you listed (e.g. Python, SQL, React),
+              how many appear in this resume? A candidate with 8 out of 10 required skills scores higher than
+              one with only 3 out of 10. Simple and transparent.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:20px; padding:16px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid var(--border-subtle);">
+        <div style="color: var(--text-muted); font-size:12px; display:flex; align-items:center; gap:8px;">
+          <i class="bi bi-info-circle"></i>
+          <span>On the free hosted version (Render.com), BERT is disabled to stay within 512MB RAM. Scoring uses TF-IDF + Skills only, which is still highly accurate for most roles.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────────────── -->
+  <div class="card-panel mb-4">
+    <div class="panel-header"><span><i class="bi bi-question-circle-fill me-2 text-primary"></i>Frequently Asked Questions</span></div>
+    <div style="padding:0;">
+
+      {% for faq in faqs %}{% endfor %}
+
+      <div style="border-bottom:1px solid var(--border-subtle); padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">🔒 Is my data private?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          Resume files are stored on your own server. The only external call is to the
+          <a href="https://console.groq.com" target="_blank" style="color:var(--primary);">Groq API</a> when you use
+          the AI chat feature — only the resume text (not the file) is sent. If you run locally without
+          a GROQ_API_KEY, nothing ever leaves your computer.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border-subtle); padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">❓ Does it work without an API key?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          Yes! Resume scoring, ranking, filtering, and CSV export work completely without a GROQ API key.
+          The key is only needed for the AI chat, interview questions, and written evaluations.
+          Get a free key at <a href="https://console.groq.com" target="_blank" style="color:var(--primary);">console.groq.com</a> — takes 2 minutes.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border-subtle); padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">📁 What file types does it support?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          <strong style="color:#fff;">PDF</strong> and <strong style="color:#fff;">DOCX</strong> (Microsoft Word) only.
+          Scanned image PDFs (where the text is a photo) may not parse correctly — use text-based PDFs for best results.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border-subtle); padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">📤 How many resumes can I upload at once?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          Up to <strong style="color:#fff;">50 files per upload batch</strong>. You can run multiple uploads for the same job.
+          Each upload batch is processed immediately.
+        </div>
+      </div>
+
+      <div style="border-bottom:1px solid var(--border-subtle); padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">⚡ Why is the live site slow to load the first time?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          The live demo runs on Render.com's free plan, which <strong style="color:#fff;">sleeps after 15 minutes</strong> of no activity.
+          The first visit after sleeping takes ~30 seconds to wake up. After that, it's fast. Upgrade to a paid plan to avoid this.
+        </div>
+      </div>
+
+      <div style="padding:20px 28px;">
+        <div style="font-weight:700; color:#fff; margin-bottom:8px; font-size:14px;">💰 Is this free?</div>
+        <div style="color: var(--text-secondary); font-size:13px; line-height:1.7;">
+          100% free and open source (MIT license). The Groq API has a generous free tier (6,000 requests/day).
+          Render.com's free hosting is sufficient for personal and small team use.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── CTA ───────────────────────────────────────────────────────────── -->
+  <div class="card-panel mb-4" style="background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(16,185,129,0.05)); border-color: rgba(139,92,246,0.25); text-align:center; padding:40px 32px;">
+    <div style="font-size:36px; margin-bottom:16px;">🚀</div>
+    <h2 style="font-size:22px; font-weight:800; color:#fff; margin-bottom:12px;">Ready to try it?</h2>
+    <p style="color: var(--text-secondary); margin-bottom:28px; max-width:480px; margin-left:auto; margin-right:auto; line-height:1.7;">
+      Create your first job posting and upload some resumes. The AI will rank them in seconds.
+    </p>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <a href="{% url 'job_create' %}" class="btn btn-primary" style="padding:12px 28px; font-size:15px;">
+        <i class="bi bi-plus-circle me-2"></i>Create a Job Now
+      </a>
+      <a href="{% url 'index' %}" class="btn btn-ghost" style="padding:12px 28px; font-size:15px;">
+        <i class="bi bi-grid-1x2 me-2"></i>Go to Dashboard
+      </a>
+      <a href="https://github.com/zulkeflrehman/smarthire-ai" target="_blank" class="btn btn-ghost" style="padding:12px 28px; font-size:15px;">
+        <i class="bi bi-github me-2"></i>View on GitHub
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

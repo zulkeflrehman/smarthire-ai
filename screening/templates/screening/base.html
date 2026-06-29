@@ -20,6 +20,11 @@
 
 <!-- ── Sidebar ──────────────────────────────────────────────────── -->
 <nav class="sidebar" id="sidebar">
+  <script>
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      document.getElementById('sidebar').classList.add('sidebar--collapsed');
+    }
+  </script>
   <div class="sidebar-brand">
     <div class="brand-icon">
       <i class="bi bi-cpu-fill"></i>
@@ -34,22 +39,40 @@
     <li class="nav-section-label">Main</li>
     <li>
       <a href="{% url 'index' %}" class="sidebar-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}">
-        <i class="bi bi-grid-1x2-fill"></i> Dashboard
+        <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
       </a>
     </li>
     <li>
       <a href="{% url 'job_list' %}" class="sidebar-link {% if 'job' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="bi bi-briefcase-fill"></i> Job Postings
+        <i class="bi bi-briefcase-fill"></i> <span>Job Postings</span>
       </a>
     </li>
 
     <li class="nav-section-label mt-3">Actions</li>
     <li>
       <a href="{% url 'job_create' %}" class="sidebar-link">
-        <i class="bi bi-plus-circle-fill"></i> New Job
+        <i class="bi bi-plus-circle-fill"></i> <span>New Job</span>
+      </a>
+    </li>
+
+    <li class="nav-section-label mt-3">Help</li>
+    <li>
+      <a href="{% url 'about' %}" class="sidebar-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+        <i class="bi bi-info-circle-fill"></i> <span>How to Use</span>
+      </a>
+    </li>
+    <li>
+      <a href="https://github.com/zulkeflrehman/smarthire-ai" target="_blank" class="sidebar-link">
+        <i class="bi bi-github"></i> <span>GitHub</span>
       </a>
     </li>
   </ul>
+
+  <div class="sidebar-collapse-toggle-wrapper d-none d-lg-flex">
+    <button class="btn btn-ghost btn-sm" id="sidebarCollapseToggle" title="Toggle Sidebar">
+      <i class="bi bi-chevron-left" id="collapseIcon"></i>
+    </button>
+  </div>
 
   <div class="sidebar-footer">
     <div class="d-flex align-items-center gap-2">
@@ -63,7 +86,12 @@
 </nav>
 
 <!-- ── Main Content ──────────────────────────────────────────────── -->
-<main class="main-content">
+<main class="main-content" id="mainContent">
+  <script>
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      document.getElementById('mainContent').classList.add('main-content--collapsed');
+    }
+  </script>
 
   <!-- Top bar -->
   <header class="topbar">
@@ -173,6 +201,19 @@
       if (e.target === guideModal) {
         closeModal();
       }
+    });
+  }
+
+  // Sidebar Collapse Toggle Functionality
+  const sidebarCollapseToggle = document.getElementById('sidebarCollapseToggle');
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+
+  if (sidebarCollapseToggle && sidebar && mainContent) {
+    sidebarCollapseToggle.addEventListener('click', () => {
+      const isCollapsed = sidebar.classList.toggle('sidebar--collapsed');
+      mainContent.classList.toggle('main-content--collapsed', isCollapsed);
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
     });
   }
 </script>

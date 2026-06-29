@@ -1,0 +1,331 @@
+{% extends 'screening/base.html' %}
+{% load static screening_extras %}
+{% block title %}{{ resume.candidate_name }} — SmartHire AI 2.0{% endblock %}
+{% block page_title %}Candidate Profile{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'results' job.pk %}" class="btn btn-ghost btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Results
+  </a>
+  <a href="{% url 'export_csv' job.pk %}" class="btn btn-ghost btn-sm">
+    <i class="bi bi-download me-1"></i> Export CSV
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Global SVG Glow Filter -->
+<svg style="display: none;">
+  <defs>
+    <filter id="glow-ring-lg" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.0" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
+{% if not groq_configured %}
+<div class="alert alert-warning d-flex gap-2 align-items-center mb-4">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <div><strong>LLM not configured.</strong> Add <code>GROQ_API_KEY</code> to your <code>.env</code> file to enable AI features.
+  Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a>.</div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- LEFT: Info + Scores + Skills -->
+  <div class="col-lg-4">
+
+    <div class="card-panel mb-4">
+      <div style="padding:24px;text-align:center;border-bottom:1px solid var(--border-subtle)">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(139, 92, 246, 0.15);color:var(--primary);font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+          {{ resume.candidate_name|first|upper }}
+        </div>
+        <h5 style="font-weight:700;margin:0 0 4px;color:#FFFFFF">{{ resume.candidate_name }}</h5>
+        <div style="font-size:12px;color:var(--text-secondary)">{{ resume.candidate_email }}</div>
+        {% if resume.candidate_phone %}<div style="font-size:12px;color:var(--text-secondary)">{{ resume.candidate_phone }}</div>{% endif %}
+        <div style="margin-top:10px">
+          <span class="badge-pill badge-pill--{% if app.status == 'shortlisted' %}green{% elif app.status == 'rejected' %}red{% else %}gray{% endif %}">
+            {{ app.get_status_display }}
+          </span>
+        </div>
+      </div>
+      <dl class="info-list">
+        <dt>Job Role</dt><dd>{{ job.title }}</dd>
+        {% if job.company %}<dt>Company</dt><dd>{{ job.company }}</dd>{% endif %}
+        <dt>Education</dt><dd>{{ resume.education|default:"Not specified" }}</dd>
+        <dt>Experience</dt><dd>{{ resume.experience_years }} yr{{ resume.experience_years|pluralize }}</dd>
+        <dt>Rank</dt><dd>#{{ app.rank }}</dd>
+        <dt>RAG Chunks</dt><dd>{{ chunks_count }} sections</dd>
+      </dl>
+    </div>
+
+    <!-- Score breakdown -->
+    <div class="card-panel mb-4">
+      <div class="panel-header"><span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Score Breakdown</span></div>
+      <div style="padding:16px">
+        <div style="text-align:center;margin-bottom:18px">
+          <div style="position:relative;width:80px;height:80px;margin:0 auto">
+            <svg viewBox="0 0 80 80" style="width:80px;height:80px">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border-subtle)" stroke-width="7"/>
+              <circle cx="40" cy="40" r="32" fill="none"
+                      stroke="{% if app.score_tier == 'high' %}#10b981{% elif app.score_tier == 'medium' %}#f59e0b{% else %}#ef4444{% endif %}"
+                      stroke-width="7" stroke-linecap="round"
+                      stroke-dasharray="201"
+                      stroke-dashoffset="{{ app.final_score|dash_offset_lg }}"
+                      filter="url(#glow-ring-lg)"
+                      transform="rotate(-90 40 40)"/>
+            </svg>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:17px;font-weight:800;font-family:monospace;color:#FFFFFF">
+              {{ app.final_score|floatformat:0 }}%
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:6px">Final Score</div>
+        </div>
+        {% if used_semantic %}
+        <div class="weight-row mb-2">
+          <span class="weight-label" style="width:110px;font-size:11.5px"><i class="bi bi-stars me-1" style="color:var(--primary)"></i>BERT</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--bert" style="width:{{ app.semantic_score }}%"></div></div>
+          <span class="weight-pct">{{ app.semantic_score|floatformat:0 }}%</span>
+        </div>
+        {% endif %}
+        <div class="weight-row mb-2">
+          <span class="weight-label" style="width:110px;font-size:11.5px"><i class="bi bi-search me-1" style="color:var(--info)"></i>TF-IDF</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--tfidf" style="width:{{ app.tfidf_score }}%"></div></div>
+          <span class="weight-pct">{{ app.tfidf_score|floatformat:0 }}%</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-label" style="width:110px;font-size:11.5px"><i class="bi bi-tag me-1" style="color:var(--teal)"></i>Skills</span>
+          <div class="weight-bar-wrap"><div class="weight-bar weight-bar--skill" style="width:{{ app.skill_score }}%"></div></div>
+          <span class="weight-pct">{{ app.skill_score|floatformat:0 }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="card-panel">
+      <div class="panel-header"><span><i class="bi bi-tag-fill me-2 text-primary"></i>Skills</span></div>
+      <div style="padding:16px">
+        {% if app.matched_skills %}
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px">Matched ✅</div>
+          <div class="skill-tags mb-3">{% for sk in app.matched_skills %}<span class="skill-tag skill-tag--matched">{{ sk }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if app.missing_skills %}
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px">Missing ❌</div>
+          <div class="skill-tags">{% for sk in app.missing_skills %}<span class="skill-tag" style="background:var(--danger-bg);color:var(--danger);border-color:var(--danger-border)">{{ sk }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: AI Features -->
+  <div class="col-lg-8">
+
+    <!-- AI Evaluation -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <span><i class="bi bi-robot me-2 text-primary"></i>AI Candidate Evaluation</span>
+        {% if explanation %}
+          <button onclick="deleteExplanation()" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Regenerate</button>
+        {% else %}
+          <button onclick="generateExplanation()" class="btn btn-primary btn-sm" id="explainBtn"
+                  {% if not groq_configured %}disabled title="Set GROQ_API_KEY in .env"{% endif %}>
+            <i class="bi bi-stars me-1"></i>Generate Evaluation
+          </button>
+        {% endif %}
+      </div>
+      <div id="explainLoading" class="d-none" style="padding:32px;text-align:center">
+        <div class="spinner-border text-primary mb-3"></div>
+        <div style="color:var(--text-secondary);font-size:13px">Analysing with AI… 5–15 seconds</div>
+      </div>
+      <div id="explainContent" style="padding:{% if explanation %}16px{% else %}32px{% endif %}">
+        {% if explanation %}
+          <div style="margin-bottom:14px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:6px">Summary</div>
+            <p style="font-size:13.5px;color:var(--text-secondary)">{{ explanation.summary }}</p>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:8px;padding:14px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--success);margin-bottom:8px">✅ Strengths</div>
+                <div style="font-size:13px;color:#FFFFFF">{{ explanation.strengths|linebreaksbr }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div style="background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:8px;padding:14px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--warning);margin-bottom:8px">⚠️ Weaknesses</div>
+                <div style="font-size:13px;color:#FFFFFF">{{ explanation.weaknesses|linebreaksbr }}</div>
+              </div>
+            </div>
+          </div>
+          {% if explanation.missing_skills_explanation %}
+          <div style="background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:8px;padding:14px;margin-bottom:12px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--danger);margin-bottom:6px">❌ Missing Skills Analysis</div>
+            <div style="font-size:13px;color:#FFFFFF">{{ explanation.missing_skills_explanation }}</div>
+          </div>
+          {% endif %}
+          <div style="background:rgba(139, 92, 246, 0.08);border:1px solid rgba(139, 92, 246, 0.15);border-left:3px solid var(--primary);border-radius:0 8px 8px 0;padding:12px 16px">
+            <strong style="color:var(--primary)">Recommendation:</strong>
+            <span style="color:var(--text-secondary);font-size:13.5px"> {{ explanation.hiring_recommendation }}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Generated {{ explanation.generated_at|timesince }} ago · Groq llama-3.1-8b-instant</div>
+        {% else %}
+          <div style="text-align:center;color:var(--text-muted)">
+            <i class="bi bi-robot" style="font-size:3rem;display:block;margin-bottom:12px"></i>
+            <p style="font-size:13px">Click "Generate Evaluation" for an AI-powered candidate analysis using RAG.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Interview Questions -->
+    <div class="card-panel mb-4">
+      <div class="panel-header">
+        <span><i class="bi bi-chat-square-text-fill me-2 text-primary"></i>Interview Questions</span>
+        <button onclick="generateQuestions()" class="btn btn-primary btn-sm" id="questionsBtn"
+                {% if not groq_configured %}disabled{% endif %}>
+          <i class="bi bi-lightning-charge me-1"></i>{% if questions %}Regenerate{% else %}Generate{% endif %}
+        </button>
+      </div>
+      <div id="questionsLoading" class="d-none" style="padding:24px;text-align:center">
+        <div class="spinner-border text-primary mb-2" style="width:1.5rem;height:1.5rem"></div>
+        <div style="color:var(--text-secondary);font-size:13px">Generating targeted questions…</div>
+      </div>
+      <div id="questionsContent">
+        {% if questions %}
+          {% for q in questions %}
+            <div style="display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border-subtle);align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">{{ q.order|add:1 }}</div>
+              <div style="font-size:13.5px;color:var(--text-secondary);flex:1">
+                <span class="badge bg-{{ q.badge_colour }} me-2" style="font-size:10px">{{ q.get_question_type_display }}</span>
+                {{ q.question }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center;padding:32px;color:var(--text-muted)">
+            <i class="bi bi-chat-square-dots" style="font-size:2.5rem;display:block;margin-bottom:10px"></i>
+            <p style="font-size:13px">Click "Generate" for personalised interview questions based on this resume.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <span><i class="bi bi-chat-dots-fill me-2 text-primary"></i>Ask AI About This Candidate</span>
+        <span style="font-size:11px;color:var(--text-muted)">RAG — answers from resume only</span>
+      </div>
+      <div id="chatHistory" style="max-height:340px;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px">
+        {% for msg in chat_history %}
+          <div style="align-self:flex-end;background:var(--primary);color:#fff;border-radius:12px 12px 2px 12px;padding:10px 14px;max-width:80%;font-size:13.5px;box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">{{ msg.question }}</div>
+          <div style="align-self:flex-start;background:rgba(255,255,255,0.05);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:12px 12px 12px 2px;padding:10px 14px;max-width:85%;font-size:13.5px">{{ msg.answer }}</div>
+        {% empty %}
+          <div id="chatEmpty" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">
+            <i class="bi bi-chat-dots" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+            Ask anything about {{ resume.candidate_name }}.
+          </div>
+        {% endfor %}
+      </div>
+      <!-- Suggested -->
+      <div style="padding:0 16px 10px;display:flex;flex-wrap:wrap;gap:6px">
+        <button onclick="askSuggested('Why should I shortlist this candidate?')" class="btn btn-ghost btn-sm" style="font-size:11px">Why shortlist?</button>
+        <button onclick="askSuggested('What are the weak points of this candidate?')" class="btn btn-ghost btn-sm" style="font-size:11px">Weak points?</button>
+        <button onclick="askSuggested('Does this candidate have NLP experience?')" class="btn btn-ghost btn-sm" style="font-size:11px">NLP experience?</button>
+        <button onclick="askSuggested('Summarize this resume in simple words.')" class="btn btn-ghost btn-sm" style="font-size:11px">Quick summary</button>
+        <button onclick="askSuggested('Is this candidate good for an internship role?')" class="btn btn-ghost btn-sm" style="font-size:11px">Intern suitability?</button>
+      </div>
+      <!-- Input -->
+      <div style="border-top:1px solid var(--border-subtle);padding:12px 16px;display:flex;gap:10px">
+        <input type="text" id="chatInput" class="form-control" placeholder="Ask about this candidate…" style="font-size:13px"
+               {% if not groq_configured %}disabled{% endif %}
+               onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()" class="btn btn-primary" id="chatSendBtn" {% if not groq_configured %}disabled{% endif %}>
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const APP_ID = {{ app.pk }};
+function getCsrf() { return document.cookie.match('(^|;) ?csrftoken=([^;]*)(;|$)')?.[2]||''; }
+
+function generateExplanation() {
+  document.getElementById('explainBtn')?.classList.add('d-none');
+  document.getElementById('explainLoading').classList.remove('d-none');
+  document.getElementById('explainContent').classList.add('d-none');
+  fetch(`/applications/${APP_ID}/explain/`, { method:'POST', headers:{'X-CSRFToken':getCsrf()} })
+  .then(r=>r.json()).then(data=>{
+    document.getElementById('explainLoading').classList.add('d-none');
+    document.getElementById('explainContent').classList.remove('d-none');
+    if(data.ok){
+      document.getElementById('explainContent').innerHTML=`
+        <div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:6px">Summary</div><p style="font-size:13.5px;color:var(--text-secondary)">${data.summary}</p></div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6"><div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:8px;padding:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--success);margin-bottom:8px">✅ Strengths</div><div style="font-size:13px;color:#FFFFFF">${data.strengths.replace(/\n/g,'<br>')}</div></div></div>
+          <div class="col-md-6"><div style="background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:8px;padding:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--warning);margin-bottom:8px">⚠️ Weaknesses</div><div style="font-size:13px;color:#FFFFFF">${data.weaknesses.replace(/\n/g,'<br>')}</div></div></div>
+        </div>
+        <div style="background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:8px;padding:14px;margin-bottom:12px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--danger);margin-bottom:6px">❌ Missing Skills</div><div style="font-size:13px;color:#FFFFFF">${data.missing_explanation}</div></div>
+        <div style="background:rgba(139, 92, 246, 0.08);border:1px solid rgba(139, 92, 246, 0.15);border-left:3px solid var(--primary);border-radius:0 8px 8px 0;padding:12px 16px"><strong style="color:var(--primary)">Recommendation:</strong> ${data.recommendation}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Just generated · Groq llama-3.1-8b-instant</div>`;
+      document.getElementById('explainContent').style.padding='16px';
+    } else { alert('Error: '+data.error); document.getElementById('explainBtn')?.classList.remove('d-none'); }
+  }).catch(()=>{ alert('Network error.'); document.getElementById('explainBtn')?.classList.remove('d-none'); document.getElementById('explainContent').classList.remove('d-none'); });
+}
+
+function deleteExplanation() {
+  if(!confirm('Regenerate the AI evaluation?')) return;
+  fetch(`/applications/${APP_ID}/explain/delete/`, { method:'POST', headers:{'X-CSRFToken':getCsrf()} }).then(()=>location.reload());
+}
+
+function generateQuestions() {
+  const btn=document.getElementById('questionsBtn'); btn.disabled=true;
+  document.getElementById('questionsLoading').classList.remove('d-none');
+  document.getElementById('questionsContent').classList.add('d-none');
+  fetch(`/applications/${APP_ID}/questions/`, { method:'POST', headers:{'X-CSRFToken':getCsrf()} })
+  .then(r=>r.json()).then(data=>{
+    document.getElementById('questionsLoading').classList.add('d-none');
+    document.getElementById('questionsContent').classList.remove('d-none');
+    if(data.ok){
+      const bm={technical:'primary',project:'info',skill_gap:'warning',behavioral:'secondary',hr:'success'};
+      document.getElementById('questionsContent').innerHTML=data.questions.map(q=>`
+        <div style="display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border-subtle);align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${q.order+1}</div>
+          <div style="font-size:13.5px;color:var(--text-secondary);flex:1"><span class="badge bg-${bm[q.type_raw]||'secondary'} me-2" style="font-size:10px">${q.question_type}</span>${q.question}</div>
+        </div>`).join('');
+    } else { alert('Error: '+data.error); }
+    btn.disabled=false; btn.innerHTML='<i class="bi bi-lightning-charge me-1"></i>Regenerate';
+  }).catch(()=>{ alert('Network error.'); btn.disabled=false; });
+}
+
+function sendChat() {
+  const input=document.getElementById('chatInput'), q=input.value.trim();
+  if(!q) return;
+  const btn=document.getElementById('chatSendBtn'); btn.disabled=true; input.disabled=true;
+  const hist=document.getElementById('chatHistory');
+  document.getElementById('chatEmpty')?.remove();
+  hist.innerHTML+=`<div style="align-self:flex-end;background:var(--primary);color:#fff;border-radius:12px 12px 2px 12px;padding:10px 14px;max-width:80%;font-size:13.5px;box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">${q}</div>`;
+  hist.innerHTML+=`<div id="thinkBubble" style="align-self:flex-start;background:rgba(255,255,255,0.05);color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:12px 12px 12px 2px;padding:10px 14px;font-size:13px"><span class="spinner-border spinner-border-sm me-2"></span>Thinking…</div>`;
+  hist.scrollTop=hist.scrollHeight; input.value='';
+  fetch(`/applications/${APP_ID}/chat/`, { method:'POST', headers:{'X-CSRFToken':getCsrf(),'Content-Type':'application/json'}, body:JSON.stringify({question:q}) })
+  .then(r=>r.json()).then(data=>{
+    document.getElementById('thinkBubble')?.remove();
+    hist.innerHTML+=`<div style="align-self:flex-start;background:rgba(255,255,255,0.05);color:var(--text-primary);border:1px solid var(--border-subtle);border-radius:12px 12px 12px 2px;padding:10px 14px;max-width:85%;font-size:13.5px">${data.ok?data.answer:'<span class="text-danger">Error: '+data.error+'</span>'}</div>`;
+    hist.scrollTop=hist.scrollHeight; btn.disabled=false; input.disabled=false; input.focus();
+  }).catch(()=>{ document.getElementById('thinkBubble')?.remove(); hist.innerHTML+='<div style="color:var(--red-500)">Network error.</div>'; btn.disabled=false; input.disabled=false; });
+}
+
+function askSuggested(q) { document.getElementById('chatInput').value=q; sendChat(); }
+</script>
+{% endblock %}

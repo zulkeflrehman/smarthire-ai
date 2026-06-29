@@ -117,3 +117,9 @@ USE_SEMANTIC_SCORING = config('USE_SEMANTIC_SCORING', default=True, cast=bool)
 # all-MiniLM-L6-v2 → 80 MB, fast on CPU (i5/i7), 384-dim embeddings.
 # Upgrade to 'all-mpnet-base-v2' for better accuracy (~420 MB).
 EMBEDDING_MODEL = config('EMBEDDING_MODEL', default='all-MiniLM-L6-v2')
+
+# ── LLM / AI API Keys ─────────────────────────────────────────────────────────
+# Primary LLM: Groq (free, fast — llama-3.1-8b-instant)
+GROQ_API_KEY   = config('GROQ_API_KEY',   default='')
+# Fallback LLM: Google Gemini (gemini-1.5-flash)
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
